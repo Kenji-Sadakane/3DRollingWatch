@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <title>webglサンプル</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            margin: 0px;
+            background-color: #000000;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <script src="js/lib/three.min.js"></script>
+    <script src="js/lib/OrbitControls.js"></script>
+    <script>
+        var scene, camera, renderer, controls;
+        var geometry, material, mesh;
+
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+
+            <!--画角、アスペクト比、ニアークリップ、ファークリップ-->
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 3, 50);
+            scene.add(camera);
+            camera.position.set(3, 3, 10);
+
+            var mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(2,2,2),
+                new THREE.MeshBasicMaterial({color: 0xff0000, wireframe: true})
+            );
+            scene.add(mesh);
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
