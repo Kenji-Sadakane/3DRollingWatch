@@ -15,10 +15,23 @@
 <body>
     <div id="container"></div>
     <script src="js/lib/three.min.js"></script>
+    <script src="js/lib/jquery-3.1.1.min.js"></script>
     <script src="js/lib/OrbitControls.js"></script>
+    <script src="js/colorSetting.js"></script>
+    <script src="js/prepareTextGeometry.js"></script>
+    <script src="js/timeTextGeometry.js"></script>
     <script>
-        var scene, camera, renderer, controls;
-        var geometry, material, mesh;
+        var scene, camera, renderer, controls, pointLight;
+        var textGeometry, material, mesh, params, group;
+        var hourText, minText, secText;
+        var date = new Date();
+
+        var targetRotation = 0;
+        var targetRotationOnMouseDown = 0;
+        var mouseX = 0;
+        var mouseXOnMouseDown = 0;
+        var vectorOnPinch1 = 0;
+        var vectorOnPinch2 = 0;
 
         init();
         animate();
@@ -27,27 +40,104 @@
             scene = new THREE.Scene();
 
             <!--画角、アスペクト比、ニアークリップ、ファークリップ-->
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 3, 50);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 3, 1000);
             scene.add(camera);
-            camera.position.set(3, 3, 10);
+            camera.lookAt(0,0,0);
+            camera.position.set(0, 15, 230);
 
-            var mesh = new THREE.Mesh(
-                new THREE.BoxGeometry(2,2,2),
-                new THREE.MeshBasicMaterial({color: 0xff0000, wireframe: true})
-            );
-            scene.add(mesh);
+            <!--var axis = new THREE.AxisHelper(1000);-->
+            <!--scene.add(axis);-->
+
+            // control
+            <!--controls = new THREE.OrbitControls(camera);-->
+            <!--controls.maxPolarAngle = 0.9 * Math.PI / 2;-->
+            <!--controls.minPolarAngle = 0.9 * Math.PI / 2;-->
+
+            <!--ライト-->
+            <!--var dirLight = new THREE.DirectionalLight( 0xffffff, 0.125 );-->
+            <!--dirLight.position.set( 0, 0, 10 ).normalize();-->
+            <!--scene.add( dirLight );-->
+
+            pointLight = new THREE.PointLight( 0x00ffff, 1.5 );
+            pointLight.position.set( 0, 100, 90 );
+            scene.add( pointLight );
+
+            <!--var ambientLight = new THREE.AmbientLight(0xffffff, 1.5);-->
+            <!--scene.add(ambientLight);-->
+
+            group = new THREE.Group();
+            scene.add(group);
+            prepareTextGeometry();
+            updateText();
 
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+            document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+            document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+            document.addEventListener( 'touchend', onDocumentTouchEnd, false );
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            controls.update();
+            <!--controls.update();-->
+
+            group.rotation.y += (targetRotation - group.rotation.y) * 0.03;
+            pointLight.color.setRGB(red.value, green.value, blue.value);
+
+            if (!isSameTime()) {
+                updateText();
+            }
 
             renderer.render(scene, camera);
+        }
+
+        function isSameTime() {
+            var currentSec = date.getSeconds();
+            date = new Date();
+            return currentSec == date.getSeconds()
+        }
+
+        function onDocumentTouchStart(event) {
+            if (event.touches.length == 1) {
+                event.preventDefault();
+                mouseXOnMouseDown = event.touches[0].pageX - window.innerWidth / 2;
+                targetRotationOnMouseDown = targetRotation;
+            } else if (event.touches.length == 2) {
+                event.preventDefault();
+                vectorOnPinch1 = Math.pow(event.touches[0].pageX - window.innerWidth / 2, 2) + Math.pow(event.touches[0].pageY - window.innerHeight / 2, 2);
+                vectorOnPinch2 = Math.pow(event.touches[1].pageX - window.innerWidth / 2, 2) + Math.pow(event.touches[1].pageY - window.innerHeight / 2, 2);
+            }
+        }
+
+        function onDocumentTouchMove(event) {
+            if (event.touches.length == 1) {
+                event.preventDefault();
+                mouseX = event.touches[0].pageX - window.innerWidth / 2;
+                targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.05;
+            } else if (event.touches.length == 2) {
+                event.preventDefault();
+                var vector1 = Math.pow(event.touches[0].pageX - window.innerWidth / 2, 2) + Math.pow(event.touches[0].pageY - window.innerHeight / 2, 2);
+                var vector2 = Math.pow(event.touches[1].pageX - window.innerWidth / 2, 2) + Math.pow(event.touches[1].pageY - window.innerHeight / 2, 2);
+                if (vector1 > vectorOnPinch1 && vector2 > vectorOnPinch2) {
+                    camera.position.z -= 3;
+                    vectorOnPinch1 = vector1;
+                    vectorOnPinch2 = vector2;
+                } else if (vector1 < vectorOnPinch1 && vector2 < vectorOnPinch2) {
+                    camera.position.z += 3;
+                    vectorOnPinch1 = vector1;
+                    vectorOnPinch2 = vector2;
+                }
+            }
+        }
+
+        function onDocumentTouchEnd(event) {
+            if (mouseX - mouseXOnMouseDown > 0) {
+                upRGB();
+            } else {
+                downRGB();
+            }
         }
     </script>
 </body>
